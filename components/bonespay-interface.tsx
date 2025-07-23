@@ -30,6 +30,7 @@ import {
 import { ChevronDown } from 'lucide-react'
 import { fromBech32Address } from '@/app/utils/platonUtils'
 import bech32 from 'bech32'
+import { useLanguage } from '@/components/LanguageContext'
 
 
 
@@ -86,6 +87,7 @@ const getExchangeRate = async () => {
 
 
 export function BONESPayInterface() {
+  const { language, setLanguage, t } = useLanguage();
   const [account, setAccount] = useState('')
   const [isConnecting, setIsConnecting] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
@@ -113,6 +115,11 @@ export function BONESPayInterface() {
   const [displayName, setDisplayName] = useState('')
   const router = useRouter()
   const transferTabRef = useRef<HTMLButtonElement>(null)
+  
+  // 切换语言
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'zh' : 'en');
+  };
 
   const connectWallet = async () => {
     if (typeof window.ethereum !== 'undefined') {
@@ -128,12 +135,12 @@ export function BONESPayInterface() {
         await fetchBalances(accounts[0])
         await fetchDisplayName(accounts[0])
       } catch (error) {
-        console.error('连接MetaMask时出错:', error)
+        console.error(t('errors.connect_metamask_error'), error)
       } finally {
         setIsConnecting(false)
       }
     } else {
-      alert('请安装MetaMask!')
+      alert(t('errors.install_metamask'))
     }
   }
 
@@ -190,14 +197,14 @@ export function BONESPayInterface() {
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text)
-      toast.success('地址已复制到剪贴板', {
+      toast.success(t('messages.address_copied'), {
         duration: 2000,
         position: 'top-center',
         icon: '👍',
       })
     } catch (err) {
-      console.error('复制文本失败: ', err)
-      toast.error('无法复制地址到剪贴板', {
+      console.error(t('errors.copy_text_failed'), err)
+      toast.error(t('errors.copy_failed'), {
         duration: 2000,
         position: 'top-center',
         icon: '❌',
@@ -229,7 +236,7 @@ export function BONESPayInterface() {
     try {
       if (!address) {
         console.error('Empty address provided to converter');
-        throw new Error('地址不能为空');
+        throw new Error(t('errors.empty_address'));
       }
       
       console.log('Converting address:', address, 'Type:', typeof address);
@@ -243,20 +250,20 @@ export function BONESPayInterface() {
           return hexAddress;
         } catch (conversionError) {
           console.error('Imuachain address conversion failed:', conversionError);
-          throw new Error('IMUA地址格式无效');
+          throw new Error(t('errors.invalid_imua_address'));
         }
       }
       
       if (typeof address === 'string' && address.trim().startsWith('0x')) {
         if (address.trim().length !== 42) {
           console.error('Invalid hex address length:', address.trim().length);
-          throw new Error('地址长度无效');
+          throw new Error(t('errors.invalid_address_length'));
         }
         return address.trim();
       }
       
       console.error('Address format not recognized:', address);
-      throw new Error('地址格式无效');
+      throw new Error(t('errors.invalid_address_format'));
     } catch (error) {
       console.error('Address conversion error:', error);
       throw error;
@@ -296,7 +303,7 @@ export function BONESPayInterface() {
       // 检查余额
       const balance = await tokenContract.balanceOf(fromAddress);
       if (balance.toString() < tokenAmount.toString()) {
-        throw new Error("余额不足");
+        throw new Error(t('errors.insufficient_balance'));
       }
       
       // 发送交易
@@ -305,7 +312,7 @@ export function BONESPayInterface() {
       
       // 添加适当的检查
       if (!tx) {
-        throw new Error("交易创建失败");
+        throw new Error(t('errors.transaction_creation_failed'));
       }
       
       // 等待交易确认
@@ -327,7 +334,7 @@ export function BONESPayInterface() {
 
     // 如果选择了maoEURC，显示提示并返回
     if (selectedAsset === 'maoEURC') {
-      toast('maoEURC正在接入中，敬请期待！', {
+      toast(t('messages.maoeurc_coming_soon'), {
         duration: 3000,
         position: 'top-center',
         icon: '🔄',
@@ -357,12 +364,12 @@ export function BONESPayInterface() {
       } else {
         const tokenAddress = TOKEN_ADDRESSES[selectedAsset as keyof typeof TOKEN_ADDRESSES]
         if (!tokenAddress) {
-          throw new Error(`${selectedAsset}合约地址未配置`)
+          throw new Error(t('errors.contract_address_not_configured', { asset: selectedAsset }))
         }
         const result = await handleERC20Transfer(tokenAddress, recipientHex, amount)
         
         if (result.success) {
-          toast.success('代币转账成功!')
+          toast.success(t('messages.token_transfer_success'))
           try {
             const response = await fetch('/api/recordTransfer', {
               method: 'POST',
@@ -394,7 +401,7 @@ export function BONESPayInterface() {
           try {
             await fetchBalances(account)
           } catch (balanceError) {
-            console.warn('代币转账成功，但余额更新失败:', balanceError)
+            console.warn(t('errors.balance_update_failed'), balanceError)
             // 不抛出错误，因为转账本身是成功的
           }
           
@@ -434,9 +441,9 @@ export function BONESPayInterface() {
       await fetchBalances(account)
       router.refresh()
     } catch (error: any) {
-      console.error('转账失败:', error)
+      console.error('Transfer failed:', error)
       setTransferStatus('error')
-      setTransferError(error.message || '转账失败，请检查您的余额和网络连接')
+      setTransferError(error.message || t('errors.transaction_failed'))
     } finally {
       setIsTransferring(false)
       setTimeout(() => {
@@ -482,7 +489,7 @@ export function BONESPayInterface() {
   }, [])
 
   const handleHeaderQRCodeClick = () => {
-    handleQRCodeClick('收款')
+    handleQRCodeClick(t('action.receive'))
   }
 
   const handleHistoryClick = () => {
@@ -586,9 +593,15 @@ export function BONESPayInterface() {
           </nav>
         </div>
         <div className="flex items-center space-x-1 mr-2">
-          {/* <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-gray-800">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-gray-300 hover:text-white hover:bg-gray-800"
+            onClick={toggleLanguage}
+          >
             <Image src="/languages.svg" alt="Language" width={20} height={20} className="mr-0" />
-          </Button> */}
+            <span className="ml-1 text-xs">{language.toUpperCase()}</span>
+          </Button>
           <Button variant="ghost" size="sm" onClick={handleHeaderQRCodeClick} className="text-gray-300 hover:text-white hover:bg-gray-800">
             <Image src="/receive-code.svg" alt="QR Code" width={20} height={20} />
           </Button>
@@ -638,7 +651,7 @@ export function BONESPayInterface() {
                   <div className="flex justify-center mt-2 mb-2">
                     <div className="p-4 space-y-3 bg-gray-800 rounded-md w-[90%]">
                       <div className="space-y-1">
-                        <p className="text-xs text-gray-500">地址</p>
+                        <p className="text-xs text-gray-500">{t('wallet.address')}</p>
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium">{truncateAddress(account)}</p>
                           <div className="flex gap-2">
@@ -672,13 +685,13 @@ export function BONESPayInterface() {
                   >
                     <div className="relative flex items-center gap-2 px-2 py-1">
                       <Wallet className="h-4 w-4" />
-                      <span>钱包</span>
+                      <span>{t('wallet.title')}</span>
                       {walletHovered && (
                         <button 
                           className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-sm hover:bg-gray-700 transition"
                           onClick={handleTransferClick}
                         >
-                          转账
+                          {t('action.transfer')}
                         </button>
                       )}
                     </div>               
@@ -692,7 +705,7 @@ export function BONESPayInterface() {
                   >
                     <div className="flex items-center gap-2 p-2">
                       <User className="h-4 w-4" />
-                      <span>账户信息</span>
+                      <span>{t('wallet.account_info')}</span>
                     </div>
                   </div>
                   <div 
@@ -704,7 +717,7 @@ export function BONESPayInterface() {
                   >
                     <div className="flex items-center gap-2 p-2">
                       <Users className="h-4 w-4" />
-                      <span>联系人</span>
+                      <span>{t('contacts.title')}</span>
                     </div>
                   </div>
                   <div 
@@ -713,7 +726,7 @@ export function BONESPayInterface() {
                   >
                     <div className="flex items-center gap-2 p-2">
                       <LogOut className="h-4 w-4" />
-                      <span>退出</span>
+                      <span>{t('wallet.logout')}</span>
                     </div>
                   </div>
                 </div>
@@ -725,7 +738,7 @@ export function BONESPayInterface() {
               onClick={connectWallet}
               disabled={isConnecting}
             >
-              {isConnecting ? '连接中...' : '登录MetaMask'}
+              {isConnecting ? t('wallet.connecting') : t('wallet.login')}
             </Button>
           )}
         </div>
@@ -738,39 +751,39 @@ export function BONESPayInterface() {
                 value="assets"
                 className="rounded-md text-gray-300 data-[state=active]:bg-white data-[state=active]:text-black"
               >
-                资产
+                {t('tabs.assets')}
               </TabsTrigger>
               <TabsTrigger
                 value="transferRecords"
                 className="rounded-md text-gray-300 data-[state=active]:bg-white data-[state=active]:text-black"
                 ref={transferTabRef}
               >
-                转账
+                {t('tabs.transfer')}
               </TabsTrigger>
               <TabsTrigger
                 value="transactionRecords"
                 className="rounded-md text-gray-300 data-[state=active]:bg-white data-[state=active]:text-black"
               >
-                交易记录
+                {t('tabs.transaction_records')}
               </TabsTrigger>
               <TabsTrigger
                 value="contacts"
                 className="rounded-md text-gray-300 data-[state=active]:bg-white data-[state=active]:text-black"
               >
-                联系人
+                {t('tabs.contacts')}
               </TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="assets" className="mt-6 border-2 border-gray-800 rounded-lg p-4 bg-gray-900 shadow-[0_0_30px_rgba(255,255,255,0.2)]">
             {!account ? (
               <>
-                <h2 className="text-xl font-semibold mb-4 text-white">资产</h2>
+                <h2 className="text-xl font-semibold mb-4 text-white">{t('tabs.assets')}</h2>
                 <div className="bg-gray-800 rounded-lg p-4 mb-6">
                   <p className="text-sm text-center mb-2 text-gray-300">
-                    登录 MetaMask 可以存入和管理资产
+                    {t('assets.login_description')}
                   </p>
                   <Button className="w-full bg-gray-700 text-white hover:bg-gray-600" onClick={connectWallet}>
-                    登录MetaMask
+                    {t('wallet.login')}
                   </Button>
                 </div>
               </>
@@ -806,7 +819,7 @@ export function BONESPayInterface() {
                 </div>
                 <div className="border-b border-gray-700" />
                 <div className="bg-white text-black p-6 rounded-lg shadow-[0_0_15px_rgba(255,255,255,0.25)]">
-                  <div className="opacity-80 text-sm mb-2">总资产估值($)</div>
+                  <div className="opacity-80 text-sm mb-2">{t('assets.total')}</div>
                   <div className="text-3xl font-bold">
                     ${(
                       parseFloat(balances.IMUA) * latRate +
@@ -821,30 +834,30 @@ export function BONESPayInterface() {
             <div className="grid grid-cols-3 gap-4 mb-6 mt-3 bg-gray-800 p-4 rounded-lg shadow-2xl">
               <div 
                 className="flex flex-col items-center justify-center cursor-pointer"
-                onClick={() => handleQRCodeClick('充值')}
+                onClick={() => handleQRCodeClick(t('action.deposit'))}
               >
-                <Image src="/deposit.svg" alt="充值" width={24} height={24} className="mb-1" />
-                <span className="text-xs text-gray-300">充值</span>
+                <Image src="/deposit.svg" alt={t('action.deposit')} width={24} height={24} className="mb-1" />
+                <span className="text-xs text-gray-300">{t('action.deposit')}</span>
               </div>
               <div 
                 className="flex flex-col items-center justify-center border-l border-gray-700 cursor-pointer"
-                onClick={() => handleQRCodeClick('收款')}
+                onClick={() => handleQRCodeClick(t('action.receive'))}
               >
-                <Image src="/receive-code-9b78545b.svg" alt="收款" width={24} height={24} className="mb-1" />
-                <span className="text-xs text-gray-300">收款</span>
+                <Image src="/receive-code-9b78545b.svg" alt={t('action.receive')} width={24} height={24} className="mb-1" />
+                <span className="text-xs text-gray-300">{t('action.receive')}</span>
               </div>
               <div 
                 className="flex flex-col items-center justify-center border-l border-gray-700 cursor-pointer"
                 onClick={handleTransferClick}
               >
-                <Image src="/swap.svg" alt="转账" width={24} height={24} className="mb-1" />
-                <span className="text-xs text-gray-300">转账</span>
+                <Image src="/swap.svg" alt={t('action.transfer')} width={24} height={24} className="mb-1" />
+                <span className="text-xs text-gray-300">{t('action.transfer')}</span>
               </div>
             </div>
             <div className="flex justify-between items-center mb-4">
-              <span className="text-sm font-medium text-white">资产名称</span>
+              <span className="text-sm font-medium text-white">{t('assets.name')}</span>
               <span className="text-sm font-medium flex items-center">
-                <p className="text-xs text-gray-400">余额</p>
+                <p className="text-xs text-gray-400">{t('assets.balance')}</p>
               </span>
             </div>
             <div className="space-y-4">
@@ -860,7 +873,7 @@ export function BONESPayInterface() {
                     />
                     <div>
                       <div className="font-xl text-white">{asset}</div>
-                      <div className="text-xs text-gray-400">Imuachain</div>
+                      <div className="text-xs text-gray-400">{t('assets.network')}</div>
                     </div>
                   </div>
                   <div className="text-right">
@@ -875,7 +888,7 @@ export function BONESPayInterface() {
           </TabsContent>
           <TabsContent value="transferRecords" id="transfer-section" className="mt-6 border-2 border-gray-800 rounded-lg p-4 bg-gray-900 shadow-[0_0_30px_rgba(255,255,255,0.2)]">
             <div className="flex justify-between items-center mb-10 border-b h-16">
-              <h2 className="text-lg font-light text-white">转账</h2>
+              <h2 className="text-lg font-light text-white">{t('transfer.title')}</h2>
               <div className="flex space-x-2">
                 <Image 
                   src="./download.svg" 
@@ -883,22 +896,22 @@ export function BONESPayInterface() {
                   width={24} 
                   height={24} 
                   className="cursor-pointer"
-                  onClick={() => handleQRCodeClick('收款')}
+                  onClick={() => handleQRCodeClick(t('action.receive'))}
                 />
                 <Image 
                   src="./qr-code.svg" 
                   alt="QR Code" 
                   width={24} 
                   height={24} 
-                  className='border-l cursor-pointer'
-                  onClick={() => handleQRCodeClick('收款')}
+                  className=' cursor-pointer'
+                  onClick={() => handleQRCodeClick(t('action.receive'))}
                 />
               </div>
             </div>
             <div className="mb-4">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-300">资产</label>
-                <span className="text-xs text-gray-400">余额: {balances[selectedAsset as keyof typeof balances]}</span>
+                <label className="block text-sm font-medium text-gray-300">{t('transfer.asset')}</label>
+                <span className="text-xs text-gray-400">{t('transfer.balance')}: {balances[selectedAsset as keyof typeof balances]}</span>
               </div>
               <div className="flex items-center mt-2 border border-gray-700 rounded-md overflow-hidden h-11 bg-gray-800">
                 <div className="flex-shrink-0 pl-2">
@@ -906,7 +919,7 @@ export function BONESPayInterface() {
                 </div>
                 <Select value={selectedAsset} onValueChange={(value) => {
                   if (value === 'maoEURC') {
-                    toast('maoEURC正在接入中，敬请期待！', {
+                    toast(t('transfer.coming.soon'), {
                       duration: 3000,
                       position: 'top-center',
                       icon: '🔄',
@@ -916,8 +929,8 @@ export function BONESPayInterface() {
                   }
                   setSelectedAsset(value)
                 }}>
-                  <SelectTrigger className="w-20 border-0 focus:ring-0 text-white bg-transparent">
-                    <SelectValue placeholder="选择资产" />
+                  <SelectTrigger className="w-32 border-0 focus:ring-0 text-white bg-transparent">
+                    <SelectValue placeholder={t('transfer.select.asset')} />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 text-white border-gray-700">
                     <SelectItem value="IMUA" className="hover:bg-gray-700">IMUA</SelectItem>
@@ -928,7 +941,7 @@ export function BONESPayInterface() {
                 </Select>
                 <Input
                   type="text"
-                  placeholder="请输入转账数额"
+                  placeholder={t('transfer.amount.placeholder')}
                   value={amount}
                   onChange={handleAmountChange}
                   className="border-0 focus-visible:ring-0 text-white bg-transparent placeholder:text-gray-500"
@@ -938,7 +951,7 @@ export function BONESPayInterface() {
             <div className="mb-4 relative">
               <Input
                 type="text"
-                placeholder="请输入公共地址（0x）或域名"
+                placeholder={t('transfer.address.placeholder')}
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
                 className="w-full pr-10 h-11 text-white bg-gray-800 placeholder:text-gray-500 border-gray-700"
@@ -956,7 +969,7 @@ export function BONESPayInterface() {
               disabled={!amount || !recipient || isTransferring}
               onClick={handleTransfer}
             >
-              {isTransferring ? '转账中...' : '转账'}
+              {isTransferring ? t('transfer.processing') : t('transfer.title')}
             </Button>
           </TabsContent>
           <TabsContent value="transactionRecords" id="transaction-records-section" className="mt-6 border-2 border-gray-800 rounded-lg p-4 bg-gray-900 shadow-[0_0_30px_rgba(255,255,255,0.2)]">

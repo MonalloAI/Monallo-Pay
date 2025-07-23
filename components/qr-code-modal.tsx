@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useLanguage } from "@/components/LanguageContext"
 
 interface QRCodeModalProps {
   isOpen: boolean
@@ -20,22 +21,23 @@ interface QRCodeModalProps {
 }
 
 export function QRCodeModal({ isOpen, onClose, address, title = "收款码" }: QRCodeModalProps) {
+  const { t } = useLanguage();
   const [qrCodeUrl, setQrCodeUrl] = useState('')
 
   useEffect(() => {
     if (address) {
       QRCode.toDataURL(address)
         .then(url => setQrCodeUrl(url))
-        .catch(err => console.error('QR Code generation failed:', err))
+        .catch(err => console.error(t('qrcode.generationFailed'), err))
     }
   }, [address])
 
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(address)
-      alert('地址已复制到剪贴板!')
+      alert(t('qrcode.addressCopied'))
     } catch (err) {
-      console.error('复制文本失败: ', err)
+      console.error(t('common.copyFailed'), err)
     }
   }
 
@@ -74,13 +76,13 @@ export function QRCodeModal({ isOpen, onClose, address, title = "收款码" }: Q
               variant="outline"
               onClick={copyToClipboard}
             >
-              复制
+              {t('common.copy')}
             </Button>
             <Button 
               className="flex-1"
               onClick={saveQRCode}
             >
-              保存 QR
+              {t('qrcode.saveQR')}
             </Button>
           </div>
         </div>

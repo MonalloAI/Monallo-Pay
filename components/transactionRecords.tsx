@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
+import { useLanguage } from "@/components/LanguageContext"
 
 interface Transaction {
   id: string
@@ -28,7 +29,8 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [totalPages, setTotalPages] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCurrency, setSelectedCurrency] = useState('所有币种')
+  const { t } = useLanguage()
+  const [selectedCurrency, setSelectedCurrency] = useState(t('transactions.all.currencies'))
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -65,9 +67,9 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
             <path d="M9 10h.01M15 10h.01M9.5 15.5c1.333-1 3.667-1 5 0" />
           </svg>
         </div>
-        <p className="text-gray-400">暂无数据</p>
+        <p className="text-gray-400">{t('transactions.no.data')}</p>
         <Button variant="link" className="text-white" onClick={connectWallet}>
-          登录MetaMask
+          {t('wallet.login')}
         </Button>
       </div>
     )
@@ -108,12 +110,12 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold mb-4 text-white">交易记录</h2>
+      <h2 className="text-2xl font-bold mb-4 text-white">{t('transactions.title')}</h2>
       <div className="flex justify-between items-center mb-4">
         <div className="relative flex-1 mr-4">
           <Input
             type="text"
-            placeholder="搜索交易..."
+            placeholder={t('transactions.search')}
             value={searchQuery}
             onChange={handleSearch}
             className="pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
@@ -126,12 +128,12 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
           </DialogTrigger>
           <DialogContent className="bg-gray-900 border-gray-800 text-white">
             <DialogHeader>
-              <DialogTitle className="text-white">选择币种</DialogTitle>
+              <DialogTitle className="text-white">{t('transactions.select.currency')}</DialogTitle>
             </DialogHeader>
             <RadioGroup value={selectedCurrency} onValueChange={handleCurrencySelect}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="所有币种" id="all" />
-                <Label htmlFor="all" className="text-gray-300">所有币种</Label>
+                <Label htmlFor="all" className="text-gray-300">{t('transactions.all.currencies')}</Label>
               </div>
               {currencies.map((currency) => (
                 <div key={currency} className="flex items-center space-x-2">
@@ -153,7 +155,7 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
           <Card className="p-4 bg-gray-800 border-gray-700">
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
               <Loader2 className="h-8 w-8 animate-spin text-white" />
-              <p className="text-gray-400">正在加载交易记录...</p>
+              <p className="text-gray-400">{t('transactions.loading')}</p>
             </div>
           </Card>
         ) : transactions.length > 0 ? (
@@ -167,26 +169,26 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <Image src={`/${tx.asset.toLowerCase()}.png`} alt={tx.asset} width={24} height={24} />
-                    <p className="text-sm font-medium text-white">交易</p>
+                    <p className="text-sm font-medium text-white">{t('transactions.transaction')}</p>
                     <p className="text-sm text-gray-400">{tx.amount} {tx.asset}</p>
                   </div>
                   <p className="text-xs text-gray-500">{formatTimestamp(tx.timestamp)}</p>
                 </div>
                 <Badge variant="outline" className="bg-green-900 text-green-400 border-green-800">
-                  成功 ✓
+                  {t('transactions.success')}
                 </Badge>
               </div>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-gray-400">
-                  <span>发送方</span>
+                  <span>{t('transactions.sender')}</span>
                   <span>{truncateString(tx.sender)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
-                  <span>接收方</span>
+                  <span>{t('transactions.recipient')}</span>
                   <span>{truncateString(tx.recipient)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
-                  <span>交易哈希</span>
+                  <span>{t('transactions.hash')}</span>
                   <span>{truncateString(tx.tx_hash)}</span>
                 </div>
               </div>
@@ -201,7 +203,7 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
                   <path d="M9 10h.01M15 10h.01M9.5 15.5c1.333-1 3.667-1 5 0" />
                 </svg>
               </div>
-              <p className="text-gray-400">当前没有交易记录</p>
+              <p className="text-gray-400">{t('transactions.empty')}</p>
             </div>
           </Card>
         )}
@@ -219,7 +221,7 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm text-gray-400">
-            第 {currentPage} 页，共 {totalPages} 页
+            {t('transactions.page', { current: currentPage, total: totalPages })}
           </span>
           <Button
             variant="ghost"
