@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 
+import { LanguageProvider } from '@/components/LanguageContext';
+
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -29,7 +31,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
         <Toaster
           position="top-center"
           reverseOrder={false}
@@ -37,7 +41,7 @@ export default function RootLayout({
           containerClassName=""
           containerStyle={{}}
           toastOptions={{
-            // 默认样式
+            // Default style
             className: '',
             duration: 4000,
             style: {
@@ -49,7 +53,7 @@ export default function RootLayout({
               maxWidth: '400px',
               textAlign: 'center',
             },
-            // 成功提示的样式
+            // Success toast style
             success: {
               duration: 4000,
               iconTheme: {
@@ -57,7 +61,7 @@ export default function RootLayout({
                 secondary: '#fff',
               },
             },
-            // 错误提示的样式
+            // Error toast style
             error: {
               duration: 4000,
               iconTheme: {

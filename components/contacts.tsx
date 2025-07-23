@@ -16,6 +16,7 @@ import {
 import { getContacts, addContact, deleteContact, updateContact } from '@/app/actions/contacts'
 import { useToast } from "@/hook/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import { useLanguage } from "@/components/LanguageContext"
 
 interface Contact {
   id: number
@@ -67,10 +68,12 @@ export default function Contacts({ isLoggedIn, userId, onContactsChange }: Conta
     return hexRegex.test(address) || hashRegex.test(address);
   }
 
+  const { t } = useLanguage();
+
   const handleAddContact = async () => {
     if (newContact.name && newContact.address) {
       if (!validateAddress(newContact.address)) {
-        setAddressError('请输入有效的0x开头地址或64位哈希地址');
+        setAddressError(t('contacts.errors.invalidAddress'));
         return;
       }
       try {
@@ -96,8 +99,8 @@ export default function Contacts({ isLoggedIn, userId, onContactsChange }: Conta
         onContactsChange(updatedContacts);
         setDeletingContact(null);
         toast({
-          title: "删除成功",
-          description: "联系人已被删除",
+          title: t('contacts.deleteSuccess'),
+          description: t('contacts.contactDeleted'),
         })
       } catch (error) {
         console.error('Error deleting contact:', error);
@@ -108,7 +111,7 @@ export default function Contacts({ isLoggedIn, userId, onContactsChange }: Conta
   const handleUpdateContact = async () => {
     if (editingContact) {
       if (!validateAddress(editingContact.address)) {
-        setAddressError('请输入有效的0x开头地址或64位哈希地址');
+        setAddressError(t('contacts.errors.invalidAddress'));
         return;
       }
       try {
@@ -129,11 +132,11 @@ export default function Contacts({ isLoggedIn, userId, onContactsChange }: Conta
   const handleCopyAddress = (address: string) => {
     navigator.clipboard.writeText(address).then(() => {
       toast({
-        title: "复制成功",
-        description: "地址已复制到剪贴板",
+        title: t('common.copySuccess'),
+        description: t('contacts.addressCopied'),
       })
     }).catch(err => {
-      console.error('复制失败:', err);
+      console.error(t('common.copyFailed'), err);
     });
   }
 
@@ -149,33 +152,33 @@ export default function Contacts({ isLoggedIn, userId, onContactsChange }: Conta
     <div className="w-full max-w-md mx-auto p-6">
       <Toaster />
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-semibold text-white">联系人</h1>
+        <h1 className="text-xl font-semibold text-white">{t('contacts.title')}</h1>
         {isLoggedIn && (
           <Dialog open={isAddingContact} onOpenChange={setIsAddingContact}>
             <DialogTrigger asChild>
               <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800">
-                <span className="mr-1">➕</span> 添加联系人
+                <span className="mr-1">➕</span> {t('contacts.addContact')}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-[400px] p-0 gap-0 bg-gray-900 border-gray-700">
               <div className="p-6">
                 <DialogHeader className="flex flex-row items-center justify-between p-0 mb-6">
-                  <DialogTitle className="text-lg font-medium text-white">添加联系人</DialogTitle>
+                  <DialogTitle className="text-lg font-medium text-white">{t('contacts.addContact')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-400">联系人名称</label>
+                    <label className="text-sm text-gray-400">{t('contacts.contactName')}</label>
                     <Input
-                      placeholder="联系人名称"
+                      placeholder={t('contacts.contactName')}
                       value={newContact.name}
                       onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
                       className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-400">联系人地址</label>
+                    <label className="text-sm text-gray-400">{t('contacts.contactAddress')}</label>
                     <Input
-                      placeholder="联系人地址"
+                      placeholder={t('contacts.contactAddress')}
                       value={newContact.address}
                       onChange={(e) => {
                         setNewContact({ ...newContact, address: e.target.value });
@@ -189,7 +192,7 @@ export default function Contacts({ isLoggedIn, userId, onContactsChange }: Conta
                     onClick={handleAddContact} 
                     className="w-full bg-white text-black hover:bg-gray-300"
                   >
-                    添加
+                    {t('common.add')}
                   </Button>
                 </div>
               </div>
@@ -201,16 +204,16 @@ export default function Contacts({ isLoggedIn, userId, onContactsChange }: Conta
       {contacts.length === 0 ? (
         <div className="text-center py-12">
           <Ghost className="w-12 h-12 mx-auto mb-4 text-gray-500 opacity-50" />
-          <p className="text-gray-400 mb-4">尚未添加任何联系人</p>
+          <p className="text-gray-400 mb-4">{t('contacts.noContacts')}</p>
           {!isLoggedIn ? (
             <Link 
               href="/login" 
               className="text-white hover:underline"
             >
-              登录 / 注册
+              {t('common.loginRegister')}
             </Link>
           ) : (
-            <Button variant="secondary" onClick={() => setIsAddingContact(true)} className="bg-gray-800 text-white hover:bg-gray-700">立即添加</Button>
+            <Button variant="secondary" onClick={() => setIsAddingContact(true)} className="bg-gray-800 text-white hover:bg-gray-700">{t('contacts.addNow')}</Button>
           )}
         </div>
       ) : (
@@ -226,9 +229,9 @@ export default function Contacts({ isLoggedIn, userId, onContactsChange }: Conta
                   <p className="text-sm text-gray-400">{truncateAddress(contact.address)}</p>
                 </div>
                 <div className="space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="sm" onClick={() => handleCopyAddress(contact.address)} className="text-gray-300 hover:text-white hover:bg-gray-700">复制</Button>
-                  <Button variant="ghost" size="sm" onClick={() => setEditingContact(contact)} className="text-gray-300 hover:text-white hover:bg-gray-700">编辑</Button>
-                  <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-gray-700" onClick={() => setDeletingContact(contact)}>删除</Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleCopyAddress(contact.address)} className="text-gray-300 hover:text-white hover:bg-gray-700">{t('common.copy')}</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setEditingContact(contact)} className="text-gray-300 hover:text-white hover:bg-gray-700">{t('common.edit')}</Button>
+                  <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-gray-700" onClick={() => setDeletingContact(contact)}>{t('common.delete')}</Button>
                 </div>
               </div>
             </div>
@@ -257,22 +260,22 @@ export default function Contacts({ isLoggedIn, userId, onContactsChange }: Conta
           <DialogContent className="max-w-[400px] p-0 gap-0 bg-gray-900 border-gray-700">
             <div className="p-6">
               <DialogHeader className="flex flex-row items-center justify-between p-0 mb-6">
-                <DialogTitle className="text-lg font-medium text-white">编辑联系人</DialogTitle>
+                <DialogTitle className="text-lg font-medium text-white">{t('contacts.editContact')}</DialogTitle>
               </DialogHeader>
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-400">联系人名称</label>
+                  <label className="text-sm text-gray-400">{t('contacts.contactName')}</label>
                   <Input
-                    placeholder="联系人名称"
+                    placeholder={t('contacts.contactName')}
                     value={editingContact.name}
                     onChange={(e) => setEditingContact({ ...editingContact, name: e.target.value })}
                     className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-400">联系人地址</label>
+                  <label className="text-sm text-gray-400">{t('contacts.contactAddress')}</label>
                   <Input
-                    placeholder="联系人地址"
+                    placeholder={t('contacts.contactAddress')}
                     value={editingContact.address}
                     onChange={(e) => {
                       setEditingContact({ ...editingContact, address: e.target.value });
@@ -286,7 +289,7 @@ export default function Contacts({ isLoggedIn, userId, onContactsChange }: Conta
                   onClick={handleUpdateContact} 
                   className="w-full bg-white text-black hover:bg-gray-300"
                 >
-                  更新
+                  {t('common.update')}
                 </Button>
               </div>
             </div>
@@ -298,14 +301,14 @@ export default function Contacts({ isLoggedIn, userId, onContactsChange }: Conta
       <Dialog open={!!deletingContact} onOpenChange={() => setDeletingContact(null)}>
         <DialogContent className="max-w-[400px] bg-gray-900 border-gray-700 text-white">
           <DialogHeader>
-            <DialogTitle className="text-white">删除联系人</DialogTitle>
+            <DialogTitle className="text-white">{t('contacts.deleteContact')}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-gray-300">确定要删除联系人 "{deletingContact?.name}" 吗？</p>
+            <p className="text-gray-300">{t('contacts.confirmDelete', { name: deletingContact?.name })}</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeletingContact(null)} className="bg-transparent border-gray-600 text-white hover:bg-gray-800">取消</Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm} className="bg-red-700 hover:bg-red-800">确定</Button>
+            <Button variant="outline" onClick={() => setDeletingContact(null)} className="bg-transparent border-gray-600 text-white hover:bg-gray-800">{t('common.cancel')}</Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm} className="bg-red-700 hover:bg-red-800">{t('common.confirm')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

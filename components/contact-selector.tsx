@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search } from 'lucide-react'
+import { useLanguage } from '@/components/LanguageContext'
 
 interface Contact {
   id: number
@@ -18,6 +19,7 @@ interface ContactSelectorProps {
 }
 
 export function ContactSelector({ isOpen, onClose, onSelect, contacts }: ContactSelectorProps) {
+  const { t } = useLanguage()
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredContacts = contacts.filter(contact => 
@@ -29,11 +31,11 @@ export function ContactSelector({ isOpen, onClose, onSelect, contacts }: Contact
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] bg-gray-900 border-gray-700">
         <DialogHeader>
-          <DialogTitle className="text-white">选择联系人</DialogTitle>
+          <DialogTitle className="text-white">{t('contacts.select_contact')}</DialogTitle>
         </DialogHeader>
         <div className="relative">
           <Input
-            placeholder="搜索联系人..."
+            placeholder={t('contacts.search_contacts')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
