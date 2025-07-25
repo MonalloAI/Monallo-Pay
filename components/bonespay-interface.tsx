@@ -48,7 +48,7 @@ const IMUACHAIN_TESTNET_PARAMS = {
 
 const TOKEN_ADDRESSES = {
   maoUSDT: '0xfa4b837d43f2519279fdcc14529d2fa0a2366c4c', // TODO: 替换为 Imuachain 上的 maoUSDT 合约地址
-  maoUSDC: '0xe5a26a2c90b6e629861bb25f10177f06720e5335', // TODO: 替换为 Imuachain 上的 maoUSDC 合约地址
+  maoUSDC: '0x4ed64b15ab26b8fe3905b4101beccc1d5b3d49fd', // TODO: 替换为 Imuachain 上的 maoUSDC 合约地址
   // maoEURC暂时没有合约地址，标记为未实现
 }
 
