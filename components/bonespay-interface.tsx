@@ -55,7 +55,7 @@ const TOKEN_ADDRESSES = {
 const ERC20_ABI = [
   'function balanceOf(address owner) view returns (uint256)',
   'function decimals() view returns (uint8)',
-  'function transfer(address to, uint amount) returns (bool)',
+  'function transfer(address to, uint256 amount) returns (bool)',
 ]
 
 const API_KEY = "ae1568e8-8ccf-446b-aeae-d922e8602a47"
@@ -164,7 +164,7 @@ export function BONESPayInterface() {
             const decimals = await contract.decimals()
             setBalances(prev => ({ 
               ...prev, 
-              [token]: formatUnits(balance, decimals) 
+              [token]: formatUnits(balance, Number(decimals)) 
             }))
           } catch (error) {
             console.error(`获取${token}余额失败:`, error)
@@ -297,17 +297,17 @@ export function BONESPayInterface() {
       console.log("Token decimals:", decimals);
       
       // 格式化金额为 Wei (使用正确的精度)
-      const tokenAmount = parseUnits(amount.toString(), decimals);
+      const tokenAmount = parseUnits(amount.toString(), Number(decimals));
       console.log("Token amount in Wei:", tokenAmount.toString());
       
       // 检查余额
       const balance = await tokenContract.balanceOf(fromAddress);
-      if (balance.toString() < tokenAmount.toString()) {
+      if (BigInt(balance.toString()) < BigInt(tokenAmount.toString())) {
         throw new Error(t('errors.insufficient_balance'));
       }
       
-      // 发送交易
-      const tx = await tokenContract.transfer(recipient, tokenAmount);
+      // 发送交易 - 确保传递字符串格式的金额
+      const tx = await tokenContract.transfer(recipient, tokenAmount.toString());
       console.log("Transaction sent:", tx?.hash || "交易对象为空");
       
       // 添加适当的检查
