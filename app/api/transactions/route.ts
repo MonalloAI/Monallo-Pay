@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import mysql from 'mysql2/promise'
+import { query } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,44 +7,77 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10)
     const limit = parseInt(searchParams.get('limit') || '10', 10)
     const search = searchParams.get('search') || ''
-    const currency = searchParams.get('currency') || '所有币种'
+    const currency = searchParams.get('currency') || 'All Currencies'
     const userAddress = searchParams.get('userAddress') || ''
     const offset = (page - 1) * limit
 
-    const connection = await mysql.createConnection({
-      host: process.env.MYSQL_HOST,
-      user: process.env.MYSQL_USER,
-      password: process.env.MYSQL_PASSWORD,
-      database: process.env.MYSQL_DATABASE,
+    console.log('Transactions API called with params:', {
+      page,
+      limit,
+      search,
+      currency,
+      userAddress,
+      offset
     })
 
-    let query = 'SELECT id, amount, asset, sender, recipient, tx_hash, timestamp FROM transfers WHERE (sender = ? OR recipient = ?)'
-    let countQuery = 'SELECT COUNT(*) as total FROM transfers WHERE (sender = ? OR recipient = ?)'
-    const queryParams: any[] = [userAddress, userAddress]
+    if (!userAddress) {
+      console.log('No userAddress provided')
+      return NextResponse.json({
+        transactions: [],
+        pagination: {
+          currentPage: page,
+          totalPages: 0,
+          totalItems: 0,
+        }
+      }, { status: 200 })
+    }
+
+    // 构建基础查询条件
+    let whereConditions = ['(sender = ? OR recipient = ?)']
+    let queryParams: any[] = [userAddress, userAddress]
 
     if (search) {
-      query += ' AND (sender LIKE ? OR recipient LIKE ? OR tx_hash LIKE ?)'
-      countQuery += ' AND (sender LIKE ? OR recipient LIKE ? OR tx_hash LIKE ?)'
+      whereConditions.push('(sender LIKE ? OR recipient LIKE ? OR tx_hash LIKE ?)')
       const searchParam = `%${search}%`
       queryParams.push(searchParam, searchParam, searchParam)
     }
 
-    if (currency !== '所有币种') {
-      query += ' AND asset = ?'
-      countQuery += ' AND asset = ?'
+    if (currency !== '所有币种' && currency !== 'All Currencies') {
+      whereConditions.push('asset = ?')
       queryParams.push(currency)
     }
 
-    query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?'
-    queryParams.push(limit, offset)
+    const whereClause = whereConditions.join(' AND ')
+    
+    // 计数查询
+    const countQueryString = `SELECT COUNT(*) as total FROM transfers WHERE ${whereClause}`
+    console.log('Executing count query:', countQueryString)
+    console.log('Count query params:', queryParams)
+    
+    const countResult = await query({
+      query: countQueryString,
+      values: queryParams
+    })
 
-    const [rows] = await connection.query(query, queryParams)
-    const [countResult] = await connection.query(countQuery, queryParams.slice(0, -2))
-
-    await connection.end()
+    // 主查询 - 使用字符串拼接来避免参数问题
+    const queryString = `SELECT id, amount, asset, sender, recipient, tx_hash, timestamp FROM transfers WHERE ${whereClause} ORDER BY timestamp DESC LIMIT ${limit} OFFSET ${offset}`
+    
+    console.log('Executing main query:', queryString)
+    console.log('Using direct query without parameters for LIMIT/OFFSET')
+    
+    const rows = await query({
+      query: queryString,
+      values: queryParams
+    })
 
     const total = (countResult as any)[0].total
     const totalPages = Math.ceil(total / limit)
+
+    console.log('Query results:', {
+      total,
+      totalPages,
+      rowsCount: (rows as any[]).length
+    })
 
     return NextResponse.json({
       transactions: rows,
@@ -56,7 +89,10 @@ export async function GET(request: NextRequest) {
     }, { status: 200 })
   } catch (error) {
     console.error('Error fetching transactions:', error)
-    return NextResponse.json({ error: 'Failed to fetch transactions' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to fetch transactions',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
