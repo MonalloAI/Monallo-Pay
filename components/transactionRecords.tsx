@@ -22,7 +22,7 @@ interface Transaction {
   timestamp: string
 }
 
-const currencies = ['LAT', 'USDT', 'USDC']
+const currencies = ['IMUA', 'USDT', 'USDC']
 
 export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isLoggedIn: boolean; account: string; connectWallet: () => Promise<void> }) {
   const [currentPage, setCurrentPage] = useState(1)
@@ -34,17 +34,34 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
+  // 当语言改变时，更新selectedCurrency
+  useEffect(() => {
+    setSelectedCurrency(t('transactions.all.currencies'))
+  }, [t])
+
   useEffect(() => {
     const fetchTransactions = async () => {
       setIsLoading(true)
       try {
+        console.log('Fetching transactions with params:', {
+          page: currentPage,
+          limit: 3,
+          search: searchQuery,
+          currency: selectedCurrency,
+          userAddress: account
+        })
+        
         const response = await fetch(`/api/transactions?page=${currentPage}&limit=3&search=${searchQuery}&currency=${selectedCurrency}&userAddress=${account}`)
+        console.log('Response status:', response.status)
+        
         if (response.ok) {
           const data = await response.json()
+          console.log('Transactions data:', data)
           setTransactions(data.transactions)
           setTotalPages(data.pagination.totalPages)
         } else {
-          console.error('Failed to fetch transactions')
+          const errorData = await response.json()
+          console.error('Failed to fetch transactions:', errorData)
         }
       } catch (error) {
         console.error('Error fetching transactions:', error)
@@ -93,8 +110,13 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
     return `${str.slice(0, 6)}...${str.slice(-4)}`
   }
 
+  const formatAmount = (amount: string) => {
+    // 去除尾部多余的0
+    return amount.replace(/\.?0+$/, '')
+  }
+
   const handleTransactionClick = (txHash: string) => {
-    window.open(`https://scan.platon.network/trade-detail?txHash=${txHash}`, '_blank')
+    window.open(`https://exoscan.org/tx/${txHash}`, '_blank')
   }
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,7 +154,7 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
             </DialogHeader>
             <RadioGroup value={selectedCurrency} onValueChange={handleCurrencySelect}>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="所有币种" id="all" />
+                <RadioGroupItem value={t('transactions.all.currencies')} id="all" />
                 <Label htmlFor="all" className="text-gray-300">{t('transactions.all.currencies')}</Label>
               </div>
               {currencies.map((currency) => (
@@ -170,7 +192,7 @@ export function TransactionRecords({ isLoggedIn, account, connectWallet }: { isL
                   <div className="flex items-center gap-2">
                     <Image src={`/${tx.asset.toLowerCase()}.png`} alt={tx.asset} width={24} height={24} />
                     <p className="text-sm font-medium text-white">{t('transactions.transaction')}</p>
-                    <p className="text-sm text-gray-400">{tx.amount} {tx.asset}</p>
+                    <p className="text-sm text-gray-400">{formatAmount(tx.amount)} {tx.asset}</p>
                   </div>
                   <p className="text-xs text-gray-500">{formatTimestamp(tx.timestamp)}</p>
                 </div>

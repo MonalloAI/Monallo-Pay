@@ -8,7 +8,7 @@ const nextConfig = {
     return [
       {
         source: '/api/staking/:path*',
-        destination: 'https://scan.platon.network/browser-server/staking/:path*',
+        destination: 'https://exoscan.org//browser-server/staking/:path*',
       },
     ]
   },
